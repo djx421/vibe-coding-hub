@@ -1,30 +1,25 @@
 'use client';
 import { useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 
 export default function AuthCallbackPage() {
-  const searchParams = useSearchParams();
   const supabase = createClient();
 
   useEffect(() => {
-    const code = searchParams.get('code');
-    const next = searchParams.get('next') ?? '/profile';
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const next = params.get('next') ?? '/profile';
 
-    if (!code) {
-      window.location.href = '/auth';
-      return;
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        window.location.href = error ? '/auth' : next;
+      });
+    } else {
+      // 可能 session 已在 URL hash 中
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        window.location.href = session ? next : '/auth';
+      });
     }
-
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) {
-        console.error('Auth callback error:', error);
-        window.location.href = '/auth';
-      } else {
-        // 强制整页跳转，让浏览器带着 cookie 重新加载目标页面
-        window.location.href = next;
-      }
-    });
   }, []);
 
   return (

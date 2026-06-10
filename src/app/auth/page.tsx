@@ -36,7 +36,13 @@ export default function AuthPage() {
   }
 
   async function onGitHub() {
-    await supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: `${location.origin}/auth/callback` } });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+      },
+    });
+    if (error) showToast(error.message, 'error');
   }
 
   return (
