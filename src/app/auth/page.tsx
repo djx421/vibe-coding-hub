@@ -13,14 +13,26 @@ export default function AuthPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!email.trim() || !password.trim()) { showToast('请填写邮箱和密码', 'error'); return; }
     setLoading(true);
-    const options = { email, password };
-    const fn = isSignUp ? supabase.auth.signUp : supabase.auth.signInWithPassword;
-    const { error } = await fn(options as any);
-    setLoading(false);
-    if (error) { showToast(error.message, 'error'); return; }
-    if (isSignUp) { showToast('注册成功！请查看邮箱确认链接', 'success'); return; }
-    window.location.href = '/profile';
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const options = { email, password };
+      const fn = isSignUp ? supabase.auth.signUp : supabase.auth.signInWithPassword;
+      const { error } = await fn(options as any);
+      clearTimeout(timeout);
+      setLoading(false);
+      if (error) { showToast(error.message, 'error'); return; }
+      if (isSignUp) { showToast('注册成功！请查看邮箱确认链接', 'success'); return; }
+      window.location.href = '/profile';
+    } catch (err: any) {
+      clearTimeout(timeout);
+      setLoading(false);
+      showToast(err?.message || '请求超时，请检查网络或 Supabase 配置', 'error');
+    }
   }
 
   async function onGitHub() {
