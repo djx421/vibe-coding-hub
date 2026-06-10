@@ -1,10 +1,10 @@
 'use client';
 import { useEffect } from 'react';
-import { getCallbackClient } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 
 export default function AuthCallbackPage() {
   useEffect(() => {
-    const supabase = getCallbackClient();
+    const supabase = createClient();
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const next = params.get('next') ?? '/profile';

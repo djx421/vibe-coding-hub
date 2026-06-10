@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import SiteHeader from '@/components/site-header';
 import { showToast } from '@/components/toaster';
@@ -9,33 +9,34 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const supabase = createClient();
+  const [supabase, setSupabase] = useState<any>(null);
+
+  useEffect(() => {
+    setSupabase(createClient());
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!supabase) return;
     if (!email.trim() || !password.trim()) { showToast('请填写邮箱和密码', 'error'); return; }
     setLoading(true);
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
 
     try {
       const options = { email, password };
       const fn = isSignUp ? supabase.auth.signUp : supabase.auth.signInWithPassword;
       const { error } = await fn(options as any);
-      clearTimeout(timeout);
       setLoading(false);
       if (error) { showToast(error.message, 'error'); return; }
       if (isSignUp) { showToast('注册成功！请查看邮箱确认链接', 'success'); return; }
       window.location.href = '/profile';
     } catch (err: any) {
-      clearTimeout(timeout);
       setLoading(false);
-      showToast(err?.message || '请求超时，请检查网络或 Supabase 配置', 'error');
+      showToast(err?.message || '请求失败', 'error');
     }
   }
 
   async function onGitHub() {
+    if (!supabase) return;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'github',
       options: {
@@ -61,7 +62,7 @@ export default function AuthPage() {
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-300" />
             <input type="password" placeholder="密码（至少6位）" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required
               className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-300" />
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading || !supabase}
               className="w-full py-2.5 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 disabled:opacity-50 transition-colors">
               {loading ? '处理中...' : isSignUp ? '注册' : '登录'}
             </button>
